@@ -23,10 +23,16 @@
 close all;
 addpath('aux_functions');
 addpath('test_functions');
+addpath('qp_traj_gen');
 
 %% Simulation parameters
-t = 0:0.01:10;
+t = 0:0.01:1;
 N = length(t);
+disp("Simulation Steps:");
+disp(N);
+disp("Ranging:");
+disp(t(1));
+disp(t(end));
 
 % Quadrotor
 J1 = 0.02;
@@ -36,7 +42,7 @@ param.J = diag([J1, J2, J3]);
 
 param.m = 2;
 
-param.d = 0.169;
+param.d = 0.09;
 param.ctf = 0.0135;
 
 % Fixed disturbance
@@ -67,6 +73,8 @@ param.c3 = 2;
 
 %% Initial conditions
 x0 = [0, 0, 0]';
+% x0 = [9,9, 9]';
+% x0 = [11,11, 11]';
 v0 = [0, 0, 0]';
 R0 = expm(pi * hat([0, 0, 1]'));
 W0 = [0, 0, 0]';
@@ -91,7 +99,9 @@ eI = X(:, 22:24)';
 for i = 1:N
     R(:,:,i) = reshape(X(i,10:18), 3, 3);
     
+    % trajectory generation
     des = command(t(i));
+
     [f(i), M(:,i), ~, ~, err, calc] = position_control(X(i,:)', des, ...
         k, param);
     
@@ -115,18 +125,23 @@ linetype = 'k';
 linewidth = 1;
 xlabel_ = 'time (s)';
 
+% tracking error of rotation
 figure;
 plot_3x1(t, e.R, '', xlabel_, 'e_R', linetype, linewidth)
 set(gca, 'FontName', 'Times New Roman');
 
+% tracking error of translation
 figure;
 plot_3x1(t, e.x, '', xlabel_, 'e_x', linetype, linewidth)
 set(gca, 'FontName', 'Times New Roman');
 
+% tracking error of linear velocity
 figure;
 plot_3x1(t, e.v, '', xlabel_, 'e_v', linetype, linewidth)
 set(gca, 'FontName', 'Times New Roman');
 
+% Red: desire states
+% Black actual states
 figure;
 plot_3x1(t, eI .* [k.I, k.I, k.yI]', '', xlabel_, 'e', linetype, linewidth)
 plot_3x1(t, param.R_delta .* ones(3, N), ...
